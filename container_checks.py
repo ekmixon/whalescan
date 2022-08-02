@@ -30,6 +30,7 @@ from docker import APIClient
 pp = pprint.PrettyPrinter(indent=4)
 
 def main(container):
+
     class bcolors:
         HEADER = '\033[95m'
         OKBLUE = '\033[94m'
@@ -53,8 +54,11 @@ def main(container):
         #pp.pprint(host_config)
 
         sec_op_value = host_config.get("SecurityOpt")
-        if sec_op_value == None:
-            print(bcolors.WARNING + "   Privilege escalation: Security options not set - processes are able to gain additional privileges" + bcolors.ENDC)
+        if sec_op_value is None:
+            print(
+                f"{bcolors.WARNING}   Privilege escalation: Security options not set - processes are able to gain additional privileges{bcolors.ENDC}"
+            )
+
 
     #check whether docker services are mapped to any sensitive ports
     def checkDockerPortMappings(container):
@@ -64,8 +68,14 @@ def main(container):
         port_mappings = cli.port(container.id, 80)
         if port_mappings != None:
             for p in port_mappings:
-                if((p['HostIp'] == '0.0.0.0') & ([p['HostPort'] == '2375'])):
-                    print(bcolors.WARNING + "Docker daemon is listening on " + p['HostPort'] + bcolors.ENDC)
+                if ((p['HostIp'] == '0.0.0.0') & ([p['HostPort'] == '2375'])):
+                    print(
+                        f"{bcolors.WARNING}Docker daemon is listening on "
+                        + p['HostPort']
+                        + bcolors.ENDC
+                    )
+
+
 
 
     #check logical drives storing containers
@@ -73,9 +83,12 @@ def main(container):
         print("\n[#] Checking container storage... ")
 
         container_info = client.info()
-        logical_drive = container_info.get('DockerRootDir')[0:3]
-        if(logical_drive == "C:\\"):
-            print(bcolors.WARNING + "   Potential DoS: Under attack, the C: drive could fill up, causing containers and the host itself to become unresponsive" + bcolors.ENDC)
+        logical_drive = container_info.get('DockerRootDir')[:3]
+        if (logical_drive == "C:\\"):
+            print(
+                f"{bcolors.WARNING}   Potential DoS: Under attack, the C: drive could fill up, causing containers and the host itself to become unresponsive{bcolors.ENDC}"
+            )
+
 
     def checkIsolation(container):
 
@@ -90,15 +103,15 @@ def main(container):
         pending_updates = []
 
         #copy update scanning script to container
-        copy = 'docker cp update-scan.ps1 ' + container.id + ':\\update-scan.ps1'
+        copy = f'docker cp update-scan.ps1 {container.id}' + ':\\update-scan.ps1'
         subprocess.getoutput(copy)
 
         #run script
-        run = 'docker exec ' + container.id + ' powershell.exe ".\\update-scan.ps1"'
+        run = f'docker exec {container.id}' + ' powershell.exe ".\\update-scan.ps1"'
         subprocess.getoutput(run)
 
         #copy result to host for analysis
-        copy = 'docker cp ' + container.id + ':\\result.txt ./result.txt'
+        copy = f'docker cp {container.id}' + ':\\result.txt ./result.txt'
         subprocess.getoutput(copy)
 
         #regex to identify pending updates
@@ -109,11 +122,8 @@ def main(container):
         mytext = fread.decode('utf-16')
         mytext = mytext.encode('ascii', 'ignore')
 
-        #write decoded result to new file
-        fwrite = open('result2.txt', 'wb')
-        fwrite.write(mytext)
-        fwrite.close()
-
+        with open('result2.txt', 'wb') as fwrite:
+            fwrite.write(mytext)
         #search file for pending updates
         for i, line in enumerate(open('result2.txt')):
             for match in re.finditer(update_pattern, line):
@@ -129,11 +139,22 @@ def main(container):
         if pending_updates:
             print(bcolors.WARNING + "\n   Following updates are pending in container " + container.id[:12] + ": " + ', '.join(pending_updates) + bcolors.ENDC)
             print(bcolors.WARNING + "\n   To update, run following commands in the container: " + bcolors.ENDC)
-            print(bcolors.WARNING + "   $ci = New-CimInstance -Namespace root/Microsoft/Windows/WindowsUpdate -ClassName MSFT_WUOperationsSession" + \
-                                            "\n   Invoke-CimMethod -InputObject $ci -MethodName ApplyApplicableUpdates" + \
-                                            "\n   Restart-Computer; exit" + bcolors.ENDC)
-            #print(bcolors.WARNING + "\n   " + bcolors.ENDC)
-            #print(bcolors.WARNING + "\n   " + bcolors.ENDC)
+            print(
+                (
+                    (
+                        (
+                            f"{bcolors.WARNING}   $ci = New-CimInstance -Namespace root/Microsoft/Windows/WindowsUpdate -ClassName MSFT_WUOperationsSession"
+                            + "\n   Invoke-CimMethod -InputObject $ci -MethodName ApplyApplicableUpdates"
+                        )
+                        + "\n   Restart-Computer; exit"
+                    )
+                    + bcolors.ENDC
+                )
+            )
+
+                    #print(bcolors.WARNING + "\n   " + bcolors.ENDC)
+                    #print(bcolors.WARNING + "\n   " + bcolors.ENDC)
+
 
 
 

@@ -33,6 +33,7 @@ import requests
 pp = pprint.PrettyPrinter(indent=4)
 
 def main():
+
     class bcolors:
         HEADER = '\033[95m'
         OKBLUE = '\033[94m'
@@ -116,7 +117,7 @@ def main():
                         t._max_width = {"Summary": 60}
 
                     for c in CVEs:
-                        severity = str(CVEs[c][0]) + ' (' + str(CVEs[c][1]) + ")"
+                        severity = f'{str(CVEs[c][0])} ({str(CVEs[c][1])})'
                         summary = str(CVEs[c][2])
                         t.add_row([c, severity, summary])
                     print(t)

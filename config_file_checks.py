@@ -28,6 +28,7 @@ import re
 import docopt
 
 def main():
+
     class bcolors:
         HEADER = '\033[95m'
         OKBLUE = '\033[94m'
@@ -50,10 +51,12 @@ def main():
             loaded_json = json.loads(daemon_config)
             for x in loaded_json:
                 if (str(loaded_json[x]) == str(['tcp://0.0.0.0:2375'])):
-                    print(bcolors.WARNING + "   Root access: Docker daemon can be publicly accessed, root access to host possible" + bcolors.ENDC)
-        #file does not exist
+                    print(
+                        f"{bcolors.WARNING}   Root access: Docker daemon can be publicly accessed, root access to host possible{bcolors.ENDC}"
+                    )
+
         else:
-            print(bcolors.WARNING + "     Daemon.json file not found" + bcolors.ENDC)
+            print(f"{bcolors.WARNING}     Daemon.json file not found{bcolors.ENDC}")
 
     def checkFilePermissions():
         #get list of all def files in directory
@@ -69,30 +72,43 @@ def main():
             f = win32security.GetFileSecurity(file, win32security.OWNER_SECURITY_INFORMATION)
             (username, domain, sid_name_use) = win32security.LookupAccountSid(None, f.GetSecurityDescriptorOwner())
             if username != 'Administrator':
-                print(bcolors.WARNING + "   File " + file + " is not owned by Administrator" + bcolors.ENDC)
+                print(
+                    f"{bcolors.WARNING}   File {file} is not owned by Administrator{bcolors.ENDC}"
+                )
+
 
             #Check who has write permissions using powershell get-acl function, then export to csv
             print("\n[#] Checking file permissions for " + file + "...")
             sleep(8)
-            dir = subprocess.Popen('powershell.exe (get-acl ' + file + ').access | Select IdentityReference,FileSystemRights,AccessControlType,IsInherited,InheritanceFlags,access | Sort-Object IdentityReference |  Export-Csv ' + file + '.csv -NoTypeInformation')
-            f = open(file + ".csv", "r")
+            dir = subprocess.Popen(
+                f'powershell.exe (get-acl {file}).access | Select IdentityReference,FileSystemRights,AccessControlType,IsInherited,InheritanceFlags,access | Sort-Object IdentityReference |  Export-Csv {file}.csv -NoTypeInformation'
+            )
+
+            f = open(f"{file}.csv", "r")
 
             #Permissions that users other than admin should not have
             disallowed_permissions = ['FullControl','Modify','Write','WriteAttributes','WriteData','WriteExtendedAttributes']
 
             #Check whether any non-admin users have any permissions they shouldn't have
             dangerous_permissions = 0
-            with open(file + ".csv", mode='r') as csv_file:
+            with open(f"{file}.csv", mode='r') as csv_file:
                 csv_reader = csv.DictReader(csv_file)
                 for row in csv_reader:
-                    if "Administrator" or "NT AUTHORITY\SYSTEM" not in row["IdentityReference"]:
-                        if row["FileSystemRights"] in disallowed_permissions:
-                            print(bcolors.WARNING + row["IdentityReference"] + " has " + row["FileSystemRights"] + " rights on " + file + bcolors.ENDC)
-                            dangerous_permissions = 1
+                    if (
+                        "Administrator"
+                        or "NT AUTHORITY\SYSTEM"
+                        not in row["IdentityReference"]
+                    ) and row["FileSystemRights"] in disallowed_permissions:
+                        print(bcolors.WARNING + row["IdentityReference"] + " has " + row["FileSystemRights"] + " rights on " + file + bcolors.ENDC)
+                        dangerous_permissions = 1
 
                 #if there are any users with dangerous permissions over the .def file
                 if dangerous_permissions == 1:
-                    print(bcolors.WARNING + "Only Administrators should be able to modify .def files! " + bcolors.ENDC)
+                    print(
+                        f"{bcolors.WARNING}Only Administrators should be able to modify .def files! {bcolors.ENDC}"
+                    )
+
+
 
 
     #Check whether Administrator owns C:\ProgramData\docker, which contains sensitive files such as certificates and keys
@@ -113,19 +129,23 @@ def main():
 
         #Check if a COM port has been added to containers (there are 256 ports in total)
         devices=[]
-        f=open('C:\Windows\System32\containers\wsc.def', 'r')
-        for line in f:
-            if "COM" in line:
-                start = 'path="\\'
-                end = '" scope='
-                s = line
-                result = (s.split(start))[1].split(end)[0]
-                devices.append(result)
-
-        f.close()
+        with open('C:\Windows\System32\containers\wsc.def', 'r') as f:
+            for line in f:
+                if "COM" in line:
+                    start = 'path="\\'
+                    end = '" scope='
+                    s = line
+                    result = (s.split(start))[1].split(end)[0]
+                    devices.append(result)
 
         if devices != 0:
-            print(bcolors.WARNING + "Containers can access the following devices: " + ', '.join(devices) + bcolors.ENDC)
+            print(
+                f"{bcolors.WARNING}Containers can access the following devices: "
+                + ', '.join(devices)
+                + bcolors.ENDC
+            )
+
+
 
 
     checkDockerDaemonJsonFile()

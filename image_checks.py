@@ -28,6 +28,7 @@ import cve_check
 import get_versions
 
 def main(image):
+
     class bcolors:
         HEADER = '\033[95m'
         OKBLUE = '\033[94m'
@@ -58,18 +59,26 @@ def main(image):
             docker_commands = layer.get('CreatedBy')
             if 'ADD' in docker_commands:
                 add_used = 1
-            if 'Invoke-WebRequest' in docker_commands:
-                if docker_commands.find('Invoke-WebRequest') == -1:
-                    if 'Get-FileHash' not in docker_commands:
-                        iwr_used = 1
+            if (
+                'Invoke-WebRequest' in docker_commands
+                and docker_commands.find('Invoke-WebRequest') == -1
+                and 'Get-FileHash' not in docker_commands
+            ):
+                iwr_used = 1
 
-            #print(docker_commands)
+                    #print(docker_commands)
 
 
         if add_used == 1:
-            print(bcolors.WARNING + "Unverified files: Image " + str(image[0]) + " contains ""ADD"" command in docker history, which retrieves and unpacks files from remote URLs. Docker COPY should be used instead."+ bcolors.ENDC)
+            print(
+                f"{bcolors.WARNING}Unverified files: Image {str(image[0])} contains ADD command in docker history, which retrieves and unpacks files from remote URLs. Docker COPY should be used instead.{bcolors.ENDC}"
+            )
+
         if iwr_used == 1:
-            print(bcolors.WARNING + "Unverified files: Image " + str(image[0]) + " uses ""Invoke-WebRequest"" to download files without any hash verification. " + bcolors.ENDC)
+            print(
+                f"{bcolors.WARNING}Unverified files: Image {str(image[0])} uses Invoke-WebRequest to download files without any hash verification. {bcolors.ENDC}"
+            )
+
 
     def checkTags(image):
 
@@ -84,7 +93,12 @@ def main(image):
             if str(tag) != 'None':
                 image = str(image)
                 image = re.findall(r"'(.*?)'", image, re.DOTALL)
-                print(bcolors.WARNING + "Image " + str(image[0]) + " is using the following tags: " + ', '.join(tag) + bcolors.ENDC)
+                print(
+                    f"{bcolors.WARNING}Image {str(image[0])} is using the following tags: "
+                    + ', '.join(tag)
+                    + bcolors.ENDC
+                )
+
 
     def updateMethod(image):
         print("\n[#] Checking update method...")
@@ -98,10 +112,13 @@ def main(image):
             docker_commands = layer.get('CreatedBy')
             if 'ADD' in docker_commands:
                 add_used = 1
-            if 'Invoke-WebRequest' in docker_commands:
-                if docker_commands.find('Invoke-WebRequest') == -1:
-                    if 'Get-FileHash' not in docker_commands:
-                        iwr_used = 1
+            if (
+                'Invoke-WebRequest' in docker_commands
+                and docker_commands.find('Invoke-WebRequest') == -1
+                and 'Get-FileHash' not in docker_commands
+            ):
+                iwr_used = 1
+
 
 
 

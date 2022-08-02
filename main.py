@@ -10,6 +10,7 @@ Released under Apache license 2.0, see LICENSE for more information
 '''
 
 
+
 import re
 import sys
 
@@ -27,21 +28,16 @@ client = docker.from_env()
 APIClient = docker.APIClient(base_url='')
 images = client.images.list()
 
-#Running checks for containers
-count = 0
-for container in client.containers.list():
-     count+=1
+for count, container in enumerate(client.containers.list(), start=1):
      containerID = container.id[:12]
      print("\n################## Running checks for container " + containerID + " (" + str(count) + "/" + str(len(client.containers.list())) + ") ##################")
      container_checks.main(container)
 
 
-count = 0
-for image in images:
+for count, image in enumerate(images, start=1):
      sleep(2)
      imagestr = str(image)
      imagestr = re.findall(r"'(.*?)'", imagestr, re.DOTALL)
-     count += 1
      print("\n################## Running checks for image " + str(imagestr[0]) + " (" + str(count) + "/" + str(len(images)) + ") ##################")
      image_checks.main(image)
      print("\n################## Checking image " + str(imagestr[0]) + " (" + str(count) + "/" + str(len(images)) + ")" + " for vulnerabilities ##################")
